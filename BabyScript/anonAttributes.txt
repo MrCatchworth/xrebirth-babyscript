@@ -1,0 +1,23 @@
+//simple blocks
+do_if:value
+do_elseif:value
+do_else:value
+do_all:counter,exact
+do_while:value
+
+//cue stuff
+param:name,value
+reset_cue:cue
+signal_cue:cue
+cancel_cue:cue
+signal_cue_instantly:cue
+cue:name
+check_value:value
+
+//stuff that's like functions
+debug_text:text
+create_list:name
+create_group:name
+append_to_list:name,exact
+add_to_group:groupname
+speak:actor,line

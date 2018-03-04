@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.props" Condition="Exists('..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -11,6 +12,8 @@
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -32,6 +35,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Antlr4.Runtime, Version=4.6.0.0, Culture=neutral, PublicKeyToken=e9931a4108ef2354, processorArchitecture=MSIL">
+      <HintPath>..\packages\Antlr4.Runtime.4.6.5-beta001\lib\net45\Antlr4.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -42,11 +48,184 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AnonAttributeConfig.cs" />
+    <Compile Include="NameShortcutConfig.cs" />
+    <Compile Include="BabyAttribute.cs" />
+    <Compile Include="BabyElement.cs" />
+    <Compile Include="BabyCompile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils.cs" />
+    <Compile Include="BabyDecompile.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="packages.config" />
+    <Antlr4 Include="BabyScript.g4">
+      <Generator>MSBuild:Compile</Generator>
+    </Antlr4>
+    <None Include="BabyScriptLexing.g4" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="anonAttributes.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="tagNameShortcuts.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestInput\AssignToCommander.xml" />
+    <Content Include="TestInput\Boarding.xml" />
+    <Content Include="TestInput\Conversations.xml" />
+    <Content Include="TestInput\DamagePlayerShipComponents.xml" />
+    <Content Include="TestInput\Damage_Stations.xml" />
+    <Content Include="TestInput\Drone_Scan_Hack.xml" />
+    <Content Include="TestInput\Encyclopedia.xml" />
+    <Content Include="TestInput\EventCutscenes.xml" />
+    <Content Include="TestInput\FreePlay.xml" />
+    <Content Include="TestInput\GenericMissions.xml" />
+    <Content Include="TestInput\GM_Assassination.xml" />
+    <Content Include="TestInput\GM_Assassination_v2.xml" />
+    <Content Include="TestInput\GM_Assist_Theft.xml" />
+    <Content Include="TestInput\GM_Build_Station.xml" />
+    <Content Include="TestInput\GM_Buy_Ship.xml" />
+    <Content Include="TestInput\GM_Cache_Sale.xml" />
+    <Content Include="TestInput\GM_Clear_Explosives.xml" />
+    <Content Include="TestInput\GM_Collect_Crafted_Item.xml" />
+    <Content Include="TestInput\GM_Collect_Loot.xml" />
+    <Content Include="TestInput\GM_Defend_Station.xml" />
+    <Content Include="TestInput\GM_Deliver_Resources.xml" />
+    <Content Include="TestInput\GM_Destroy_Capship.xml" />
+    <Content Include="TestInput\GM_Destroy_Matching_Objects.xml" />
+    <Content Include="TestInput\GM_Destroy_Objects.xml" />
+    <Content Include="TestInput\GM_Drone_Hunt.xml" />
+    <Content Include="TestInput\GM_Escort_Ships.xml" />
+    <Content Include="TestInput\GM_Harvest_Resources.xml" />
+    <Content Include="TestInput\GM_Patrol.xml" />
+    <Content Include="TestInput\GM_Police_Scan.xml" />
+    <Content Include="TestInput\GM_Protection_Detail.xml" />
+    <Content Include="TestInput\GM_Race.xml" />
+    <Content Include="TestInput\GM_Reveal_Station.xml" />
+    <Content Include="TestInput\GM_Ship_Distress_Call.xml" />
+    <Content Include="TestInput\GM_Smuggle_Goods.xml" />
+    <Content Include="TestInput\GM_Transport_Passengers.xml" />
+    <Content Include="TestInput\Guidance.xml" />
+    <Content Include="TestInput\Hints.xml" />
+    <Content Include="TestInput\InitUniverse.xml" />
+    <Content Include="TestInput\Intro_Teladi_Outpost.xml" />
+    <Content Include="TestInput\LIB_Create_Enemies.xml" />
+    <Content Include="TestInput\LIB_Create_Ships.xml" />
+    <Content Include="TestInput\LIB_Factions.xml" />
+    <Content Include="TestInput\LIB_Generic.xml" />
+    <Content Include="TestInput\LIB_HolomapBriefing.xml" />
+    <Content Include="TestInput\LIB_HolomapTarget.xml" />
+    <Content Include="TestInput\LIB_Processed_Trades.xml" />
+    <Content Include="TestInput\LIB_Reward_Balancing.xml" />
+    <Content Include="TestInput\MainMenu.xml" />
+    <Content Include="TestInput\MC_Diplomatic_Aid.xml" />
+    <Content Include="TestInput\MC_DynamicChain.xml" />
+    <Content Include="TestInput\MC_Management.xml" />
+    <Content Include="TestInput\Modes.xml" />
+    <Content Include="TestInput\Notifications.xml" />
+    <Content Include="TestInput\NPC_Architect.xml" />
+    <Content Include="TestInput\NPC_Engineer.xml" />
+    <Content Include="TestInput\NPC_Itemtrader.xml" />
+    <Content Include="TestInput\NPC_Licencetrader.xml" />
+    <Content Include="TestInput\NPC_Marine.xml" />
+    <Content Include="TestInput\NPC_Shiptrader.xml" />
+    <Content Include="TestInput\NPC_Shiptrader_Small.xml" />
+    <Content Include="TestInput\NPC_Specialist.xml" />
+    <Content Include="TestInput\NPC_Staff.xml" />
+    <Content Include="TestInput\NPC_Upgradetrader.xml" />
+    <Content Include="TestInput\Orders.xml" />
+    <Content Include="TestInput\PlacedObjects.xml" />
+    <Content Include="TestInput\Plot_Argon_Licence.xml" />
+    <Content Include="TestInput\Plot_ep1.xml" />
+    <Content Include="TestInput\Plot_ep1_ch0.xml" />
+    <Content Include="TestInput\Plot_ep1_ch1.xml" />
+    <Content Include="TestInput\Plot_ep1_ch2.xml" />
+    <Content Include="TestInput\Plot_ep1_ch3.xml" />
+    <Content Include="TestInput\Plot_ep1_ch4.xml" />
+    <Content Include="TestInput\Plot_Xperimental.xml" />
+    <Content Include="TestInput\RML_Accept_Trade_Orders.xml" />
+    <Content Include="TestInput\RML_Acquire_Crew.xml" />
+    <Content Include="TestInput\RML_Assign_Subordinate.xml" />
+    <Content Include="TestInput\RML_Battle_Objectives.xml" />
+    <Content Include="TestInput\RML_Board_Objects.xml" />
+    <Content Include="TestInput\RML_Build_Object.xml" />
+    <Content Include="TestInput\RML_Collect_Crates.xml" />
+    <Content Include="TestInput\RML_Collect_Inventory.xml" />
+    <Content Include="TestInput\RML_Deliver_Control_Entity.xml" />
+    <Content Include="TestInput\RML_Deliver_Inventory.xml" />
+    <Content Include="TestInput\RML_Deliver_Units.xml" />
+    <Content Include="TestInput\RML_Deliver_Wares.xml" />
+    <Content Include="TestInput\RML_Destroy_Components.xml" />
+    <Content Include="TestInput\RML_Destroy_Entities.xml" />
+    <Content Include="TestInput\RML_Destroy_Matching_Objects.xml" />
+    <Content Include="TestInput\RML_Destroy_Summarised_Components.xml" />
+    <Content Include="TestInput\RML_Drop_Objects.xml" />
+    <Content Include="TestInput\RML_Escort_Convoy.xml" />
+    <Content Include="TestInput\RML_Flight_Along_Path.xml" />
+    <Content Include="TestInput\RML_FlyTo.xml" />
+    <Content Include="TestInput\RML_Hack_Object.xml" />
+    <Content Include="TestInput\RML_Harvest_Resources.xml" />
+    <Content Include="TestInput\RML_Long_Range_Scan.xml" />
+    <Content Include="TestInput\RML_Map_Space.xml" />
+    <Content Include="TestInput\RML_Mode_Build.xml" />
+    <Content Include="TestInput\RML_Mode_Collect_Cargo.xml" />
+    <Content Include="TestInput\RML_Mode_Collect_Ore.xml" />
+    <Content Include="TestInput\RML_Mode_Law_Enforcement.xml" />
+    <Content Include="TestInput\RML_Patrol.xml" />
+    <Content Include="TestInput\RML_Pickup_Passengers.xml" />
+    <Content Include="TestInput\RML_Player_NPC_Patrol.xml" />
+    <Content Include="TestInput\RML_Protect_Object.xml" />
+    <Content Include="TestInput\RML_Race.xml" />
+    <Content Include="TestInput\RML_Reveal_Object.xml" />
+    <Content Include="TestInput\RML_Sabotage_Object.xml" />
+    <Content Include="TestInput\RML_Scan_Anomaly.xml" />
+    <Content Include="TestInput\RML_Scan_TargetPoints.xml" />
+    <Content Include="TestInput\RML_Transfer_Money.xml" />
+    <Content Include="TestInput\RML_Transport_Passengers.xml" />
+    <Content Include="TestInput\RML_Unlock_Crates.xml" />
+    <Content Include="TestInput\Setup.xml" />
+    <Content Include="TestInput\Setup_DLC2.xml" />
+    <Content Include="TestInput\Setup_Gamestarts.xml" />
+    <Content Include="TestInput\Setup_Teladi_Outpost.xml" />
+    <Content Include="TestInput\Showcases.xml" />
+    <Content Include="TestInput\Smalltalk.xml" />
+    <Content Include="TestInput\test_BigBattle.xml" />
+    <Content Include="TestInput\Test_MD.xml" />
+    <Content Include="TestInput\Test_ShipCreation.xml" />
+    <Content Include="TestInput\Trade.xml" />
+    <Content Include="TestInput\Tutorials.xml" />
+    <Content Include="TestInput\Tutorial_Build.xml" />
+    <Content Include="TestInput\Tutorial_Collectables.xml" />
+    <Content Include="TestInput\Tutorial_Combat.xml" />
+    <Content Include="TestInput\Tutorial_Drones.xml" />
+    <Content Include="TestInput\Tutorial_Drones_Hacking.xml" />
+    <Content Include="TestInput\Tutorial_Drones_Scanning.xml" />
+    <Content Include="TestInput\Tutorial_Drones_Traitor.xml" />
+    <Content Include="TestInput\Tutorial_Exploration.xml" />
+    <Content Include="TestInput\Tutorial_Flight.xml" />
+    <Content Include="TestInput\Tutorial_Platforms.xml" />
+    <Content Include="TestInput\Tutorial_Stations.xml" />
+    <Content Include="TestInput\Tutorial_Trade.xml" />
+    <Content Include="TestInput\Tutorial_Travel.xml" />
+    <Content Include="TestInput\Upkeep.xml" />
+    <Content Include="TestInput\Upkeep_Management.xml" />
+    <Content Include="TestInput\WE_Distress_Call.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.props'))" />
+    <Error Condition="!Exists('..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.targets'))" />
+  </Target>
+  <Import Project="..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.targets" Condition="Exists('..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>if not exist "$(TargetDir)TestInput" mkdir $(TargetDir)TestInput
+if not exist "$(TargetDir)TestOutput" mkdir $(TargetDir)TestOutput
+xcopy $(ProjectDir)TestInput $(TargetDir)TestInput /e /y</PostBuildEvent>
+  </PropertyGroup>
 </Project>
