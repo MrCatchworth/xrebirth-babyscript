@@ -13,11 +13,22 @@ cancel_cue:cue
 signal_cue_instantly:cue
 cue:name
 check_value:value
+library:name
 
 //stuff that's like functions
 debug_text:text
-create_list:name
-create_group:name
-append_to_list:name,exact
-add_to_group:groupname
 speak:actor,line
+start_script:name,object
+
+//set and remove
+set_value:name
+remove_value:name
+
+//list operations
+create_list:name
+append_to_list:name,exact
+
+//group operations
+create_group:groupname
+add_to_group:groupname,object
+remove_from_group:group,object

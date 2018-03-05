@@ -213,6 +213,7 @@
     <Content Include="TestInput\Upkeep.xml" />
     <Content Include="TestInput\Upkeep_Management.xml" />
     <Content Include="TestInput\WE_Distress_Call.xml" />
+    <Content Include="XR-Babyscript.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

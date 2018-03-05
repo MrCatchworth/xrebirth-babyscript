@@ -13,11 +13,25 @@ namespace BabyScript
     {
         //to break up multiline XML comments
         private static readonly Regex NewlineRegex = new Regex("\r\n|\r|\n");
+        private int indentLevel;
+        private string curElementComment;
+        private readonly AnonAttributeConfig attrConfig;
+        private readonly NameShortcutConfig nameConfig;
+        private readonly TextWriter writer;
+        private readonly XmlReader reader;
+        private static readonly int tabWidth = 4;
 
-        private static bool breakpointEncountered = false;
-        private static string currentComment = null;
+        public BabyDecompile(string path, Stream inputStream, Stream outputStream, NameShortcutConfig names, AnonAttributeConfig attrs)
+        {
+            indentLevel = 0;
+            curElementComment = null;
+            nameConfig = names;
+            attrConfig = attrs;
+            reader = XmlReader.Create(inputStream);
+            writer = new StreamWriter(outputStream);
+        }
 
-        private static bool TryAssignmentShortcut(XmlReader reader, TextWriter writer)
+        private bool TryAssignmentShortcut()
         {
             if (reader.Name != "set_value")
             {
@@ -31,8 +45,6 @@ namespace BabyScript
             string varExact = null;
             string varName = null;
 
-            string comment = null;
-
             while (reader.MoveToNextAttribute())
             {
                 if (reader.Name == "name")
@@ -45,7 +57,7 @@ namespace BabyScript
                 }
                 else if (reader.Name == "comment")
                 {
-                    comment = reader.Value;
+                    curElementComment = reader.Value;
                 }
                 else
                 {
@@ -63,25 +75,18 @@ namespace BabyScript
             writer.Write(varName);
             writer.Write(" = ");
             writer.Write(varExact);
-            writer.WriteLine(";");
-
-            if (comment != null)
-            {
-                WriteComment(comment, writer);
-            }
+            writer.Write(";");
             return true;
         }
 
-        private static void WriteAttributes(XmlReader reader, TextWriter writer, AnonAttributeConfig anonAttrConfig)
+        private void WriteAttributes()
         {
             if (!reader.HasAttributes)
             {
                 return;
             }
 
-            if (breakpointEncountered) Console.Error.WriteLine("Debug enabled for {0}", reader.Name);
-
-            string[] impliedNames = anonAttrConfig.GetAnonAttributes(reader.Name);
+            string[] impliedNames = attrConfig.GetAnonAttributes(reader.Name);
 
             List<BabyAttribute> allAttributes = new List<BabyAttribute>();
             List<BabyAttribute> namedAttributes = new List<BabyAttribute>();
@@ -92,14 +97,12 @@ namespace BabyScript
             {
                 if (reader.Name == "comment")
                 {
-                    currentComment = reader.Value;
+                    curElementComment = reader.Value;
                     continue;
                 }
                 BabyAttribute newAttribute = new BabyAttribute(reader.Name.Replace(":", ""), reader.Value);
                 allAttributes.Add(newAttribute);
             }
-
-            if (breakpointEncountered) Console.Error.WriteLine("Has implied name config: {0}", impliedNames != null);
 
             //if there are some implied attributes, try to match them in order with what we get until we can't
             //since the order matters, we can't match the second implied one without having the first
@@ -127,16 +130,11 @@ namespace BabyScript
             //and now, a named attribute is just an attribute we didn't find to be anonymous
             foreach (BabyAttribute attribute in allAttributes)
             {
-                //if (!anonAttributes.Contains(attribute))
                 if (!attribute.IsAnonymous)
                 {
                     namedAttributes.Add(attribute);
                 }
             }
-
-            if (breakpointEncountered) Console.Error.WriteLine("Anon attributes: {0}", anonAttributes.Count);
-            if (breakpointEncountered) Console.Error.WriteLine("Named attributes: {0}", namedAttributes.Count);
-            if (breakpointEncountered) Console.Error.WriteLine("Total attributes: {0}", allAttributes.Count);
 
             //things to write is all the nameless ones followed by the named ones
             IEnumerable<BabyAttribute> thingsToWrite = anonAttributes.Concat<BabyAttribute>(namedAttributes);
@@ -172,66 +170,71 @@ namespace BabyScript
             }
 
             reader.MoveToElement();
-
-            breakpointEncountered = false;
         }
 
-        private static void WriteComment(string comment, TextWriter writer)
+        private void WriteIndent()
         {
-            writer.Write(" //" + NewlineRegex.Replace(comment, " "));
+            writer.Write(new string(' ', tabWidth * indentLevel));
         }
 
-        public static bool Convert(string fileName, Stream inputStream, Stream outputStream, NameShortcutConfig nameShortcuts, AnonAttributeConfig anonAttrConfig)
+        private void WriteComment(string comment)
         {
-            XmlReader reader = XmlReader.Create(inputStream);
-            StreamWriter writer = new StreamWriter(outputStream);
+            if (comment.IndexOf('\n') != -1)
+            {
+                writer.Write("/*");
+                writer.Write(comment);
+                writer.Write("*/");
+            }
+            else
+            {
+                writer.Write(" //" + NewlineRegex.Replace(comment, " "));
+            }
+        }
 
-            int tabWidth = 4;
-
-            int indentLevel = 0;
+        public bool Convert()
+        {
             while (reader.Read())
             {
-                string indent = new string(' ', tabWidth * indentLevel);
                 if (reader.NodeType == XmlNodeType.Element)
                 {
-                    if (reader.Name == "breakpoint")
+
+                    string shortName = nameConfig.ToShort(reader.Name);
+                    WriteIndent();
+
+                    //write a shorthand assign statement if possible
+                    bool assignWritten = TryAssignmentShortcut();
+
+                    //otherwise, write a normal element
+                    if (!assignWritten)
                     {
-                        breakpointEncountered = true;
+                        writer.Write(shortName ?? reader.Name);
+
+                        if (reader.HasAttributes)
+                        {
+                            int attrCount = reader.AttributeCount;
+                            writer.Write("(");
+                            WriteAttributes();
+                            writer.Write(")");
+                        }
+
+                        if (reader.IsEmptyElement)
+                        {
+                            writer.Write(";");
+                        }
                     }
 
-                    string shortName = nameShortcuts.ToShort(reader.Name);
-                    writer.Write(indent);
-
-                    if (TryAssignmentShortcut(reader, writer))
+                    //either way write any comment as necessary
+                    if (curElementComment != null)
                     {
-                        continue;
-                    }
-
-                    writer.Write(shortName != null ? shortName : reader.Name);
-
-                    if (reader.HasAttributes)
-                    {
-                        int attrCount = reader.AttributeCount;
-                        writer.Write("(");
-                        WriteAttributes(reader, writer, anonAttrConfig);
-                        writer.Write(")");
-                    }
-
-                    if (reader.IsEmptyElement)
-                    {
-                        writer.Write(";");
-                    }
-                    if (currentComment != null)
-                    {
-                        WriteComment(currentComment, writer);
-                        currentComment = null;
+                        WriteComment(curElementComment);
+                        curElementComment = null;
                     }
 
                     writer.WriteLine();
 
-                    if (!reader.IsEmptyElement)
+                    if (!assignWritten && !reader.IsEmptyElement)
                     {
-                        writer.Write(indent);
+                        WriteIndent();
                         writer.WriteLine("{");
                         indentLevel++;
                     }
@@ -239,18 +242,14 @@ namespace BabyScript
                 if (reader.NodeType == XmlNodeType.EndElement)
                 {
                     indentLevel--;
-                    indent = new string(' ', tabWidth * indentLevel);
-                    writer.Write(indent);
+                    WriteIndent();
                     writer.WriteLine("}");
                 }
                 if (reader.NodeType == XmlNodeType.Comment)
                 {
-                    string[] commentLines = NewlineRegex.Split(reader.Value);
-                    foreach (string line in commentLines)
-                    {
-                        writer.Write(indent);
-                        writer.WriteLine("//" + line);
-                    }
+                    WriteIndent();
+                    WriteComment(reader.Value);
+                    writer.WriteLine();
                 }
             }
 

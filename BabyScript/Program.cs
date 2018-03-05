@@ -240,7 +240,7 @@ namespace BabyScript
                 }
                 else
                 {
-                    success = BabyDecompile.Convert(path, inputStream, outputStream, nameConfig, attrConfig);
+                    success = new BabyDecompile(path, inputStream, outputStream, nameConfig, attrConfig).Convert();
                 }
                 inputStream.Close();
 
