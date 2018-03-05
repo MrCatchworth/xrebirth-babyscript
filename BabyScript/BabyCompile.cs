@@ -12,28 +12,29 @@ namespace BabyScript
     {
         public class XmlWritingListener : BabyScriptBaseListener
         {
-            private NameShortcutConfig NameShortcuts;
-            private AnonAttributeConfig ImpliedAttributes;
-            private XmlWriter Writer;
+            private readonly XmlWriter Writer;
             private BabyScriptParser.ElementContext CurrentElement;
             public bool Error { get; private set; }
-            private readonly string fileName;
+
+            private readonly BabyCompile Owner;
 
             Queue<string> AvailableNames = new Queue<string>();
             bool HasImpliedAttributes;
 
-            public XmlWritingListener(XmlWriter w, string fname, NameShortcutConfig names, AnonAttributeConfig attributes)
+            public XmlWritingListener(BabyCompile owner)
             {
-                Writer = w;
-                NameShortcuts = names;
-                ImpliedAttributes = attributes;
+                Owner = owner;
+                Writer = XmlWriter.Create(Owner.outputStream, new XmlWriterSettings
+                {
+                    Indent = true,
+                    IndentChars = "  "
+                });
                 Error = false;
-                fileName = fname;
             }
 
             private void SetCurrentElement(BabyScriptParser.ElementContext ctx, string realName)
             {
-                string[] anonAttributes = ImpliedAttributes.GetAnonAttributes(realName);
+                string[] anonAttributes = Owner.attrConfig.GetAnonAttributes(realName);
                 HasImpliedAttributes = anonAttributes != null;
 
                 AvailableNames.Clear();
@@ -50,8 +51,14 @@ namespace BabyScript
 
             public override void EnterElement(BabyScriptParser.ElementContext ctx)
             {
+                if (ctx.ele.IsComment)
+                {
+                    Writer.WriteComment(ctx.ele.Attributes[0].Value);
+                    return;
+                }
+
                 string realName = ctx.ele.Name;
-                string fullName = NameShortcuts.ToFull(realName);
+                string fullName = Owner.nameConfig.ToFull(realName);
                 if (fullName != null)
                 {
                     realName = fullName;
@@ -74,11 +81,16 @@ namespace BabyScript
             public override void ExitElement(BabyScriptParser.ElementContext ctx)
             {
                 if (Error) return;
-                Writer.WriteEndElement();
+                if (!ctx.ele.IsComment)
+                {
+                    Writer.WriteEndElement();
+                }
             }
 
             public override void EnterAttribute(BabyScriptParser.AttributeContext ctx)
             {
+                if (CurrentElement.ele.IsComment) return;
+
                 string name = ctx.attr.Name;
                 if (name == null)
                 {
@@ -86,7 +98,7 @@ namespace BabyScript
                     {
                         Console.Error.WriteLine(
                             string.Format(Utils.FileLineColMessageFormat,
-                                fileName,
+                                Owner.path,
                                 CurrentElement.Start.Line,
                                 CurrentElement.Start.Column,
                                 CurrentElement.ele.Name + "has an anonymous attribute but the config has no rule for it"
@@ -98,7 +110,7 @@ namespace BabyScript
                     {
                         Console.Error.WriteLine(
                             string.Format(Utils.FileLineColMessageFormat,
-                                fileName,
+                                Owner.path,
                                 CurrentElement.Start.Line,
                                 CurrentElement.Start.Column,
                                 CurrentElement.ele.Name + " has more anonymous attributes than the config specifies for it"
@@ -123,35 +135,60 @@ namespace BabyScript
 
                 Writer.WriteAttributeString(name, realValue);
             }
+
+            public void Flush()
+            {
+                Writer.Flush();
+            }
         }
 
-        public static bool Convert(string fileName, Stream inputStream, Stream outputStream, NameShortcutConfig nameShortcuts, AnonAttributeConfig anonAttrConfig)
+        private class MyErrorListener: BaseErrorListener
         {
-            StreamWriter output = new StreamWriter(outputStream);
+            public override void SyntaxError(IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+            {
+                Console.Error.WriteLine("The type of this token is: " + recognizer.Vocabulary.GetSymbolicName(offendingSymbol.Type));
+                Console.Error.WriteLine("The text of this token is: " + offendingSymbol.Text);
+            }
+        }
+
+        private readonly string path;
+        private readonly Stream inputStream;
+        private readonly Stream outputStream;
+        private readonly AnonAttributeConfig attrConfig;
+        private readonly NameShortcutConfig nameConfig;
+
+        public BabyCompile(string fileName, Stream input, Stream output, NameShortcutConfig nameShortcuts, AnonAttributeConfig anonAttrConfig)
+        {
+            path = fileName;
+            inputStream = input;
+            outputStream = output;
+            nameConfig = nameShortcuts;
+            attrConfig = anonAttrConfig;
+        }
+
+        public bool Convert()
+        {
+            
             BabyScriptLexer lex = new BabyScriptLexer(new AntlrInputStream(inputStream));
-            CommonTokenStream stream = new CommonTokenStream(lex);
-            BabyScriptParser parser = new BabyScriptParser(stream);
+            CommonTokenStream tokenStream = new CommonTokenStream(lex);
+            BabyScriptParser parser = new BabyScriptParser(tokenStream);
+            parser.AddErrorListener(new MyErrorListener());
 
             BabyScriptParser.DocumentContext doc = parser.document();
 
             if (parser.NumberOfSyntaxErrors > 0)
             {
-                Console.Error.WriteLine(string.Format(Utils.FileMessageFormat, fileName, "Aborting write due to syntax error(s)"));
+                Console.Error.WriteLine(string.Format(Utils.FileMessageFormat, path, "Aborting write due to syntax error(s)"));
                 return false;
             }
-            XmlWriterSettings settings = new XmlWriterSettings
-            {
-                Indent = true,
-                IndentChars = "    "
-            };
-            XmlWriter writer = XmlWriter.Create(output, settings);
-            XmlWritingListener listener = new XmlWritingListener(writer, fileName, nameShortcuts, anonAttrConfig);
 
+            XmlWritingListener listener = new XmlWritingListener(this);
             new ParseTreeWalker().Walk(listener, doc);
+            listener.Flush();
 
             if (listener.Error)
             {
-                Console.Error.WriteLine(string.Format(Utils.FileMessageFormat, fileName, "Aborting write due to semantic error(s)"));
+                Console.Error.WriteLine(string.Format(Utils.FileMessageFormat, path, "Aborting write due to semantic error(s)"));
                 return false;
             }
             return true;

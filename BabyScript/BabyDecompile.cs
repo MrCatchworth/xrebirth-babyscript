@@ -154,7 +154,7 @@ namespace BabyScript
                 parser.exprEof();
                 if (parser.NumberOfSyntaxErrors > 0)
                 {
-                    Console.Error.WriteLine("Line {0}: {1} isn't a valid expression, got to wrap it", ((IXmlLineInfo)reader).LineNumber, attribute.Value);
+                    Console.Error.WriteLine("Line {0}: \"{1}\" isn't a valid expression and will be wrapped in doublequotes", ((IXmlLineInfo)reader).LineNumber, attribute.Value);
                     writer.Write("\"" + attribute.Value + "\"");
                 }
                 else
@@ -187,7 +187,7 @@ namespace BabyScript
             }
             else
             {
-                writer.Write(" //" + NewlineRegex.Replace(comment, " "));
+                writer.Write("//" + NewlineRegex.Replace(comment, " "));
             }
         }
 
@@ -226,6 +226,7 @@ namespace BabyScript
                     //either way write any comment as necessary
                     if (curElementComment != null)
                     {
+                        writer.Write(' ');
                         WriteComment(curElementComment);
                         curElementComment = null;
                     }
@@ -239,17 +240,25 @@ namespace BabyScript
                         indentLevel++;
                     }
                 }
-                if (reader.NodeType == XmlNodeType.EndElement)
+                else if (reader.NodeType == XmlNodeType.EndElement)
                 {
                     indentLevel--;
                     WriteIndent();
                     writer.WriteLine("}");
                 }
-                if (reader.NodeType == XmlNodeType.Comment)
+                else if (reader.NodeType == XmlNodeType.Comment)
                 {
                     WriteIndent();
                     WriteComment(reader.Value);
                     writer.WriteLine();
+                }
+                else if (reader.NodeType == XmlNodeType.Text || reader.NodeType == XmlNodeType.Whitespace)
+                {
+                    int numNewlines = reader.Value.Count(c => c == '\n');
+                    for (int i=0; i<numNewlines-1; i++)
+                    {
+                        writer.WriteLine();
+                    }
                 }
             }
 

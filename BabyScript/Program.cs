@@ -114,7 +114,8 @@ namespace BabyScript
             };
 
             Queue<string> argQueue = new Queue<string>(args);
-            Console.Error.WriteLine("I have a queue of size " + argQueue.Count);
+            //Console.Error.WriteLine("I have a queue of size " + argQueue.Count);
+
             //process command line arguments to set up controls
             try
             {
@@ -160,10 +161,12 @@ namespace BabyScript
                 return;
             }
 
+            bool outputIsDirectory = false;
             //think about the output path based on the specified input path[s]
             if (multipleInputFiles)
             {
                 //if more than one input file is specified, the output path must be a directory
+                outputIsDirectory = true;
                 if (outFilePath == null)
                 {
                     outFilePath = ".";
@@ -184,13 +187,18 @@ namespace BabyScript
                 if (outFilePath == null)
                 {
                     outFilePath = mode == ProgramMode.Compile ? "out.xml" : "out.txt";
+                    outputIsDirectory = false;
                 }
                 else
                 {
+                    /*
                     if (Directory.Exists(outFilePath))
                     {
                         outFilePath = Path.Combine(outFilePath, mode == ProgramMode.Compile ? "out.xml" : "out.txt");
+                        outputIsDirectory = true;
                     }
+                    */
+                    outputIsDirectory = Directory.Exists(outFilePath);
                 }
             }
 
@@ -199,7 +207,7 @@ namespace BabyScript
             foreach (string path in inFilePaths)
             {
                 string curOutPath;
-                if (multipleInputFiles)
+                if (outputIsDirectory)
                 {
                     string extension = mode == ProgramMode.Compile ? ".xml" : ".txt";
                     string outputFileName = Path.GetFileNameWithoutExtension(path) + extension;
@@ -236,7 +244,7 @@ namespace BabyScript
                 bool success;
                 if (mode == ProgramMode.Compile)
                 {
-                    success = BabyCompile.Convert(path, inputStream, outputStream, nameConfig, attrConfig);
+                    success = new BabyCompile(path, inputStream, outputStream, nameConfig, attrConfig).Convert();
                 }
                 else
                 {
@@ -269,7 +277,8 @@ namespace BabyScript
         {
             Run(args);
             Console.Error.WriteLine("Exit code is " + Environment.ExitCode);
-            Console.ReadKey();
+            Console.Error.WriteLine(Environment.ExitCode == 0 ? "SUCCESS" : "FAIL=========================================");
+            Console.Read();
         }
     }
 }

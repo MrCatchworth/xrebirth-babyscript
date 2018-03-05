@@ -7,6 +7,7 @@ lexer grammar BabyScriptLexing;
 @lexer::members
 {
     private int ParenDepth = 0;
+	private bool AfterNumber = false;
 }
 
 CLPAREN : ')'
@@ -20,10 +21,12 @@ OPPAREN : '('
     }
     ;
 
+BLOCK_COMMENT : '/*' .*? '*/' {ParenDepth == 0}? -> skip;
 COMMENT : '//' ~('\r' | '\n')* -> skip ; //the newlines don't have to be part of the actual comment, those are skipped as whitespace anyway
 WS : [ \t\r\n]+ -> skip ;
 
-NUMBER : '-'? ('0'..'9')+ ('.' ('0' .. '9')*)? ('e' ('0' .. '9')+)? UNITCAST?;
+NUMBER : '-'? ('0'..'9')+ ('.' ('0' .. '9')*)? ('e' ('0' .. '9')+)? UNIT?;
+UNITCAST : UNIT;
 DOUBLE_QUOTE_STRING : '"' (~('\\'|'"') | '\\'. )* '"' ;
 SINGLE_QUOTE_STRING : '\'' (~('\\'|'\'') | '\\'. )* '\'' ;
 PLUS : '+';
@@ -59,7 +62,7 @@ ELSE :          'else';
 
 TABLE :         'table';
 
-UNITCAST
+fragment UNIT
     : 'i'
     | 'L'
     | 'f'
@@ -74,7 +77,6 @@ UNITCAST
     | 'ms'
     | 's'
     | 'min'
-    | 'h'
-    ;
+    | 'h';
 
 ID : '$'?[A-Za-z] [A-Za-z0-9_]* ;

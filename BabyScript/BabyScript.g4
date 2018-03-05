@@ -37,7 +37,8 @@ expr returns [string fullText]
         ICharStream stream = $start.InputStream;
         $fullText = stream.GetText(new Interval($start.StartIndex, $stop.StopIndex));
     }
-    : PLUS expr
+    : IF expr THEN expr (ELSE expr)?
+	| PLUS expr
     | MINUS expr
     | TABLE '[' tableDef? ']' //table initialiser
     | (NOT|TYPEOF) expr //not, typeof
@@ -86,7 +87,8 @@ atom
     | squareList
     | braceList
     | OPPAREN expr CLPAREN UNITCAST? //subexpression with optional type cast
-    | ID
+    // | ID
+	| {NextTokenValidId();} . //this is so messy
     ;
 
 element returns [BabyElement ele]
@@ -125,6 +127,10 @@ attribute returns [BabyAttribute attr]
             //Console.WriteLine("Found an anonymous attribute: {0}", $expr.fullText);
             $attr = new BabyAttribute(null, $expr.fullText);
         }
+	| DOUBLE_QUOTE_STRING
+		{
+			$attr = new BabyAttribute(null, $DOUBLE_QUOTE_STRING.text);
+		}
     ;
 
 elementChildren returns [BabyElement[] eles]

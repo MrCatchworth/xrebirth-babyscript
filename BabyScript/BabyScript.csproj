@@ -64,7 +64,9 @@
     <Antlr4 Include="BabyScript.g4">
       <Generator>MSBuild:Compile</Generator>
     </Antlr4>
-    <None Include="BabyScriptLexing.g4" />
+    <Antlr4 Include="BabyScriptLexing.g4">
+      <Generator>MSBuild:Compile</Generator>
+    </Antlr4>
   </ItemGroup>
   <ItemGroup>
     <Content Include="anonAttributes.txt">
