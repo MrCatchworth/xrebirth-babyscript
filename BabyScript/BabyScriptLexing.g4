@@ -21,7 +21,7 @@ OPPAREN : '('
     }
     ;
 
-BLOCK_COMMENT : '/*' .*? '*/' {ParenDepth == 0}? -> skip;
+BLOCK_COMMENT : '/*' .*? '*/' {ParenDepth == 0}? ;
 COMMENT : '//' ~('\r' | '\n')* -> skip ; //the newlines don't have to be part of the actual comment, those are skipped as whitespace anyway
 WS : [ \t\r\n]+ -> skip ;
 

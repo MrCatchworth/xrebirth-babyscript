@@ -49,6 +49,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnonAttributeConfig.cs" />
+    <Compile Include="BabyComment.cs" />
+    <Compile Include="BabyNode.cs" />
     <Compile Include="NameShortcutConfig.cs" />
     <Compile Include="BabyAttribute.cs" />
     <Compile Include="BabyElement.cs" />

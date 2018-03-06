@@ -5,6 +5,7 @@ using System.Linq;
 using System.IO;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
+using Antlr4.Runtime.Misc;
 
 namespace BabyScript
 {
@@ -17,13 +18,15 @@ namespace BabyScript
             public bool Error { get; private set; }
 
             private readonly BabyCompile Owner;
+            private readonly BabyScriptParser Parser;
 
             Queue<string> AvailableNames = new Queue<string>();
             bool HasImpliedAttributes;
 
-            public XmlWritingListener(BabyCompile owner)
+            public XmlWritingListener(BabyCompile owner, BabyScriptParser parser)
             {
                 Owner = owner;
+                Parser = parser;
                 Writer = XmlWriter.Create(Owner.outputStream, new XmlWriterSettings
                 {
                     Indent = true,
@@ -49,15 +52,15 @@ namespace BabyScript
                 CurrentElement = ctx;
             }
 
+            public override void EnterComment(BabyScriptParser.CommentContext ctx)
+            {
+                Writer.WriteComment(((BabyComment)ctx.treeNode).Text);
+            }
+
             public override void EnterElement(BabyScriptParser.ElementContext ctx)
             {
-                if (ctx.ele.IsComment)
-                {
-                    Writer.WriteComment(ctx.ele.Attributes[0].Value);
-                    return;
-                }
-
-                string realName = ctx.ele.Name;
+                BabyElement element = (BabyElement)ctx.treeNode;
+                string realName = element.Name;
                 string fullName = Owner.nameConfig.ToFull(realName);
                 if (fullName != null)
                 {
@@ -69,9 +72,9 @@ namespace BabyScript
                 Writer.WriteStartElement(realName);
                 SetCurrentElement(ctx, realName);
 
-                if (ctx.ele.IsAssignment)
+                if (element.IsAssignment)
                 {
-                    foreach (BabyAttribute a in ctx.ele.Attributes)
+                    foreach (BabyAttribute a in element.Attributes)
                     {
                         Writer.WriteAttributeString(a.Name, a.Value);
                     }
@@ -81,16 +84,11 @@ namespace BabyScript
             public override void ExitElement(BabyScriptParser.ElementContext ctx)
             {
                 if (Error) return;
-                if (!ctx.ele.IsComment)
-                {
-                    Writer.WriteEndElement();
-                }
+                Writer.WriteEndElement();
             }
 
             public override void EnterAttribute(BabyScriptParser.AttributeContext ctx)
             {
-                if (CurrentElement.ele.IsComment) return;
-
                 string name = ctx.attr.Name;
                 if (name == null)
                 {
@@ -101,7 +99,7 @@ namespace BabyScript
                                 Owner.path,
                                 CurrentElement.Start.Line,
                                 CurrentElement.Start.Column,
-                                CurrentElement.ele.Name + "has an anonymous attribute but the config has no rule for it"
+                                ((BabyElement)CurrentElement.treeNode).Name + "has an anonymous attribute but the config has no rule for it"
                              )
                         );
                         Error = true;
@@ -113,7 +111,7 @@ namespace BabyScript
                                 Owner.path,
                                 CurrentElement.Start.Line,
                                 CurrentElement.Start.Column,
-                                CurrentElement.ele.Name + " has more anonymous attributes than the config specifies for it"
+                                ((BabyElement)CurrentElement.treeNode).Name + " has more anonymous attributes than the config specifies for it"
                             )
                         );
                         Error = true;
@@ -182,7 +180,7 @@ namespace BabyScript
                 return false;
             }
 
-            XmlWritingListener listener = new XmlWritingListener(this);
+            XmlWritingListener listener = new XmlWritingListener(this, parser);
             new ParseTreeWalker().Walk(listener, doc);
             listener.Flush();
 

@@ -24,9 +24,9 @@ options
 }
 
 document returns [BabyElement root]
-    : element EOF
+    : nodeList+=node+ EOF { $nodeList.Count(c => c.treeNode is BabyElement) == 1 }?
         {
-            $root = $element.ele;
+            $root = (BabyElement)($nodeList.First(c => c.treeNode is BabyElement).treeNode);
         }
     ;
 
@@ -91,15 +91,19 @@ atom
 	| {NextTokenValidId();} . //this is so messy
     ;
 
-element returns [BabyElement ele]
-    : {NextTokenValidId()}? eleName=. elementAttributes elementChildren
+node returns [BabyNode treeNode]
+    : {NextTokenValidId()}? eleName=. elementAttributes nodeChildren
         {
-            $ele = new BabyElement($eleName.text, $elementAttributes.attrs, $elementChildren.eles);
-        }
+            $treeNode = new BabyElement($eleName.text, $elementAttributes.attrs, $nodeChildren.nodes);
+        } # Element
     | leftHand=expr '=' rightHand=expr ';'
         {
-            $ele = BabyElement.CreateAssignment($leftHand.fullText, $rightHand.fullText);
-        }
+            $treeNode = BabyElement.CreateAssignment($leftHand.fullText, $rightHand.fullText);
+        } # Element
+	| BLOCK_COMMENT
+		{
+			$treeNode = new BabyComment($BLOCK_COMMENT.text.Substring(2, $BLOCK_COMMENT.text.Length-4));
+		} # Comment
     ;
 
 elementAttributes returns [BabyAttribute[] attrs]
@@ -133,13 +137,13 @@ attribute returns [BabyAttribute attr]
 		}
     ;
 
-elementChildren returns [BabyElement[] eles]
+nodeChildren returns [BabyNode[] nodes]
     : ';'
         {
-            $eles = new BabyElement[0];
+            $nodes = new BabyNode[0];
         }
-    | '{' rawList+=element* '}'
+    | '{' rawList+=node* '}'
         {
-            $eles = $rawList.Select(e => e.ele).ToArray();
+            $nodes = $rawList.Select(n => n.treeNode).ToArray();
         }
     ;
